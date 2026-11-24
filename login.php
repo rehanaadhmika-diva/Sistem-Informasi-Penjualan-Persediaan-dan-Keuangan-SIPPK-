@@ -1,4 +1,7 @@
 <?php
+session_start();
+require __DIR__ . "/config/koneksi.php";
+
 $error = "";
 $email = "";
 
@@ -9,8 +12,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     if ($email === "" || $password === "") {
         $error = "Email dan kata sandi wajib diisi.";
     } else {
-        // TODO: cek email dan kata sandi ke database (tahap berikutnya)
-        $error = "Email atau kata sandi salah.";
+        $stmt = $pdo->prepare("SELECT id_pengguna, nama, password_hash, peran FROM pengguna WHERE email = ?");
+        $stmt->execute([$email]);
+        $pengguna = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($pengguna && password_verify($password, $pengguna["password_hash"])) {
+            session_regenerate_id(true);
+            $_SESSION["id_pengguna"] = $pengguna["id_pengguna"];
+            $_SESSION["nama"] = $pengguna["nama"];
+            $_SESSION["peran"] = $pengguna["peran"];
+            header("Location: dashboard.php");
+            exit;
+        } else {
+            $error = "Email atau kata sandi salah.";
+        }
     }
 }
 ?>
